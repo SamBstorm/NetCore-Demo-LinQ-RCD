@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Demo_LinQ_Operateurs;
+using System.Collections;
 
 ArrayList arraylist_contacts = new ArrayList() {
         new Contact() { Email ="delphine@tftic.be", FirstName = "Delphine", LastName= "Vander Stricht", BirthDateYear = 2000 },
@@ -13,6 +14,18 @@ ArrayList arraylist_contacts = new ArrayList() {
         new Contact() { Email ="ryan@tftic.be", FirstName = "Ryan", LastName= "Costache", BirthDateYear = 2000 },
         new Contact() { Email ="yves@tftic.be", FirstName = "Yves", LastName= "Tshitamba", BirthDateYear = 2000 }
     };
+
+List<RendezVous> meetings = new List<RendezVous>() { 
+    new RendezVous() { Email = "michel@tftic.be", Date = new DateTime(2022,10,1) },
+    new RendezVous() { Email = "michel@tftic.be", Date = new DateTime(2022,10,2) },
+    new RendezVous() { Email = "michel@tftic.be", Date = new DateTime(2022,10,3) },
+    new RendezVous() { Email = "michel@tftic.be", Date = new DateTime(2022,10,4) },
+    new RendezVous() { Email = "thomas@tftic.be", Date = new DateTime(2022,10,4) },
+    new RendezVous() { Email = "thomas@tftic.be", Date = new DateTime(2022,10,5) },
+    new RendezVous() { Email = "thomas@tftic.be", Date = new DateTime(2022,10,6) },
+    new RendezVous() { Email = "ryan@tftic.be", Date = new DateTime(2022,10,1) },
+    new RendezVous() { Email = "ryan@tftic.be", Date = new DateTime(2022,10,4) }
+};
 
 
 #region Cast<T>() permet de caster seul les éléments compatibles sinon Exception
@@ -71,3 +84,72 @@ foreach (int age in ages)
     Console.WriteLine(age);
 }
 #endregion
+
+#region GroupBy avec IGrouping<,>
+IEnumerable<IGrouping<int, Contact>> result = contacts.GroupBy(c => c.BirthDateYear);
+
+foreach (IGrouping<int, Contact> group in result)
+{
+    Console.WriteLine($"{group.Key} :");
+    foreach (Contact contact in group)
+    {
+        Console.WriteLine($"\t{contact.FirstName} {contact.LastName}");
+    }
+} 
+#endregion
+
+#region Groupby avec transformation (attention mauvaise manipulation répétition de la clée)
+//var email_by_year = contacts
+//                    .Select(c => new { c.Email, c.BirthDateYear })
+//                    .GroupBy(c => c.BirthDateYear);
+
+//foreach (var group in email_by_year)
+//{
+//    Console.WriteLine($"{group.Key} :");
+//    foreach (var mail_year in group)
+//    {
+//        Console.WriteLine($"\t{mail_year.Email}");
+//    }
+//} 
+#endregion
+
+#region Groupby avec transformation (attention bonne manipulation, mais plus de IGrouping<,>)
+var email_by_year = contacts
+            .GroupBy(c => c.BirthDateYear)
+            .Select(g => new { Annee = g.Key, Emails = g.Select(c => c.Email) });
+
+foreach (var group in email_by_year)
+{
+    Console.WriteLine($"{group.Annee} :");
+    foreach (string mail in group.Emails)
+    {
+        Console.WriteLine($"\t{mail}");
+    }
+}
+#endregion
+
+#region Join
+var rdv_contact = contacts.Join(meetings,
+                        c => c.Email,
+                        m => m.Email,
+                        (c, m) => new { c.LastName, c.FirstName, m.Date });
+
+foreach (var rdv in rdv_contact)
+{
+    Console.WriteLine($"{rdv.FirstName} {rdv.LastName} : {rdv.Date}");
+}
+#endregion
+
+var rdv_contact_group = contacts.GroupJoin(meetings,
+                                           c => c.Email,
+                                           m => m.Email,
+                                           (c, ms) => new { c.LastName, c.FirstName, Dates = ms.Select(m => m.Date) });
+
+foreach (var rdv in rdv_contact_group)
+{
+    Console.WriteLine($"{rdv.FirstName} {rdv.LastName} :");
+    foreach (DateTime date in rdv.Dates)
+    {
+        Console.WriteLine($"\t{date}");
+    }
+}
